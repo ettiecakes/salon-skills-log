@@ -62,6 +62,7 @@ input[type=date]{width:100%}
 .notes{width:100%;min-height:96px;padding:10px;border:2px solid var(--line);border-radius:12px;font:inherit;background:#fff;resize:vertical}
 .notes:focus{outline:none;border-color:var(--accent)}
 .ntxt{white-space:pre-wrap;margin:8px 0 0;font-size:15px}
+.acts{display:flex;gap:18px}
 .del{background:none;border:0;color:var(--mute);font-size:13px;margin-top:6px;padding:4px 0}
 .del.arm{color:#c0392b;font-weight:700}
 .banner{display:block;width:100%;text-align:left;background:#e4f1ff;border:1px solid #b7d6f5;color:#1d4e7a;border-radius:12px;padding:10px 12px;font-weight:600;margin:0 0 10px}
@@ -214,14 +215,14 @@ function logv(){
     <div class="chips">${e.units.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div>
     ${e.notes?`<p class="ntxt">${esc(e.notes)}</p>`:''}
     ${e.photos.length?`<div class="thumbs">${e.photos.map(p=>`<div><img data-p="${p}" alt="Finished work"></div>`).join('')}</div>`:''}
-    <button class="del ${armed===e.id?'arm':''}" data-del="${e.id}">${armed===e.id?'Tap again to delete':'Delete entry'}</button></div>`).join(''):'<div class="empty">No services logged yet.<br>Tap “Log a service” after your next client.</div>'}`;
+    <div class="acts"><button class="del" data-edit="${e.id}">Edit</button><button class="del ${armed===e.id?'arm':''}" data-del="${e.id}">${armed===e.id?'Tap again to delete':'Delete entry'}</button></div></div>`).join(''):'<div class="empty">No services logged yet.<br>Tap “Log a service” after your next client.</div>'}`;
   setBar('<button class="ghost" id="change">Change units</button><button class="go" id="newlog">+ Log a service</button>');
   fillThumbs();
 }
 function newlog(){
-  const m=mine();
+  const m=ALL().filter(([c])=>S.picked[c]||draft.units[c]);
   $('app').innerHTML=`
-  <h1>Log a service</h1>
+  <h1>${draft.editId?'Edit service':'Log a service'}</h1>
   <h2>Date</h2>
   <input type="date" id="dt" value="${draft.date}" max="${today()}">
   <h2>Which units did this cover?</h2>
@@ -229,11 +230,11 @@ function newlog(){
   <h2>Notes</h2>
   <textarea class="notes" id="nt" placeholder="What did you do? What went well? What would you do differently?">${esc(draft.notes||'')}</textarea>
   <h2>Photo of the finished work</h2>
-  <div class="thumbs">${draft.photos.map(p=>`<div><img src="${p.url}" alt=""><button class="x" data-rp="${p.id}" aria-label="Remove photo">×</button></div>`).join('')}</div>
+  <div class="thumbs">${draft.photos.filter(p=>p.url).map(p=>`<div><img src="${p.url}" alt=""><button class="x" data-rp="${p.id}" aria-label="Remove photo">×</button></div>`).join('')}</div>
   <label class="photo">+ Add photo<input type="file" id="ph" accept="image/*" multiple hidden></label>
   <p class="note" id="phnote"></p>`;
   const n=Object.keys(draft.units).filter(k=>draft.units[k]).length;
-  setBar(`<button class="ghost" id="cancellog">Cancel</button><button class="go" id="savelog" ${n?'':'disabled'}>${n?'Save entry':'Tick at least one unit'}</button>`);
+  setBar(`<button class="ghost" id="cancellog">Cancel</button><button class="go" id="savelog" ${n?'':'disabled'}>${n?(draft.editId?'Save changes':'Save entry'):'Tick at least one unit'}</button>`);
 }
 function render(){({picker,units,sign:signv,log:logv,newlog}[view])()}
 function keep(fn){const y=scrollY;fn();scrollTo(0,y)}
@@ -266,12 +267,31 @@ document.addEventListener('click',async e=>{
   else if(t.id==='cancellog'){draft=null;view='log';render();scrollTo(0,0)}
   else if(t.id==='savelog'){
     draft.date=($('dt')&&$('dt').value)||draft.date;
-    const ids=[];
-    for(const p of draft.photos){try{await putPhoto(p.id,p.blob);ids.push(p.id)}catch(err){}}
     const used=Object.keys(draft.units).filter(k=>draft.units[k]);
-    S.log.push({id:Date.now(),date:draft.date,units:used,photos:ids,notes:(draft.notes||'').trim()});
+    const notes=(draft.notes||'').trim();
+    if(draft.editId){
+      const e=S.log.find(x=>x.id===draft.editId);
+      if(e){
+        const keep=draft.photos.map(p=>p.id);
+        (e.photos||[]).filter(id=>!keep.includes(id)).forEach(delPhoto);
+        const ids=[];
+        for(const p of draft.photos){if(!p.existing){try{await putPhoto(p.id,p.blob)}catch(err){continue}}ids.push(p.id)}
+        e.date=draft.date;e.units=used;e.notes=notes;e.photos=ids;
+      }
+    }else{
+      const ids=[];
+      for(const p of draft.photos){try{await putPhoto(p.id,p.blob);ids.push(p.id)}catch(err){}}
+      S.log.push({id:Date.now(),date:draft.date,units:used,photos:ids,notes});
+    }
     used.forEach(c=>{if(!S.status[c])S.status[c]=1});
     save();draft=null;view='log';render();scrollTo(0,0);
+  }
+  else if(t.dataset.edit){
+    const e=S.log.find(x=>x.id===Number(t.dataset.edit));if(!e)return;
+    const photos=[];
+    for(const id of e.photos){let b=null;try{b=await getPhoto(id)}catch(err){}photos.push({id,existing:true,blob:b,url:b?URL.createObjectURL(b):''})}
+    draft={editId:e.id,date:e.date,units:Object.fromEntries(e.units.map(c=>[c,true])),photos,notes:e.notes||''};
+    armed=null;view='newlog';render();scrollTo(0,0);
   }
   else if(t.dataset.del){
     const id=Number(t.dataset.del);
