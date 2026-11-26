@@ -59,6 +59,9 @@ input:focus{outline:none;border-color:var(--accent)}
 .x{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:13px;line-height:22px;padding:0}
 .photo{display:inline-block;border:2px dashed var(--accent);color:var(--accent);border-radius:12px;padding:12px 16px;font-weight:700;margin-top:6px}
 input[type=date]{width:100%}
+.notes{width:100%;min-height:96px;padding:10px;border:2px solid var(--line);border-radius:12px;font:inherit;background:#fff;resize:vertical}
+.notes:focus{outline:none;border-color:var(--accent)}
+.ntxt{white-space:pre-wrap;margin:8px 0 0;font-size:15px}
 .del{background:none;border:0;color:var(--mute);font-size:13px;margin-top:6px;padding:4px 0}
 .del.arm{color:#c0392b;font-weight:700}
 .banner{display:block;width:100%;text-align:left;background:#e4f1ff;border:1px solid #b7d6f5;color:#1d4e7a;border-radius:12px;padding:10px 12px;font-weight:600;margin:0 0 10px}
@@ -209,6 +212,7 @@ function logv(){
   ${tabs('log')}
   ${L.length?L.map(e=>`<div class="card"><div class="d">${fmt(e.date)}</div>
     <div class="chips">${e.units.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div>
+    ${e.notes?`<p class="ntxt">${esc(e.notes)}</p>`:''}
     ${e.photos.length?`<div class="thumbs">${e.photos.map(p=>`<div><img data-p="${p}" alt="Finished work"></div>`).join('')}</div>`:''}
     <button class="del ${armed===e.id?'arm':''}" data-del="${e.id}">${armed===e.id?'Tap again to delete':'Delete entry'}</button></div>`).join(''):'<div class="empty">No services logged yet.<br>Tap “Log a service” after your next client.</div>'}`;
   setBar('<button class="ghost" id="change">Change units</button><button class="go" id="newlog">+ Log a service</button>');
@@ -222,6 +226,8 @@ function newlog(){
   <input type="date" id="dt" value="${draft.date}" max="${today()}">
   <h2>Which units did this cover?</h2>
   ${m.map(([c,t])=>`<button class="unit ${draft.units[c]?'on':''}" data-lu="${esc(c)}"><span class="box">${draft.units[c]?'✓':''}</span><span><span class="code">${esc(c)}</span><span class="ttl">${esc(t)}</span></span></button>`).join('')}
+  <h2>Notes</h2>
+  <textarea class="notes" id="nt" placeholder="What did you do? What went well? What would you do differently?">${esc(draft.notes||'')}</textarea>
   <h2>Photo of the finished work</h2>
   <div class="thumbs">${draft.photos.map(p=>`<div><img src="${p.url}" alt=""><button class="x" data-rp="${p.id}" aria-label="Remove photo">×</button></div>`).join('')}</div>
   <label class="photo">+ Add photo<input type="file" id="ph" accept="image/*" multiple hidden></label>
@@ -254,7 +260,7 @@ document.addEventListener('click',async e=>{
     }
   }
   else if(t.dataset.v){view=t.dataset.v;render();scrollTo(0,0)}
-  else if(t.id==='newlog'){draft={date:today(),units:{},photos:[]};view='newlog';render();scrollTo(0,0)}
+  else if(t.id==='newlog'){draft={date:today(),units:{},photos:[],notes:''};view='newlog';render();scrollTo(0,0)}
   else if(t.dataset.lu){draft.units[t.dataset.lu]=!draft.units[t.dataset.lu];keep(newlog)}
   else if(t.dataset.rp){draft.photos=draft.photos.filter(p=>p.id!==t.dataset.rp);keep(newlog)}
   else if(t.id==='cancellog'){draft=null;view='log';render();scrollTo(0,0)}
@@ -263,7 +269,7 @@ document.addEventListener('click',async e=>{
     const ids=[];
     for(const p of draft.photos){try{await putPhoto(p.id,p.blob);ids.push(p.id)}catch(err){}}
     const used=Object.keys(draft.units).filter(k=>draft.units[k]);
-    S.log.push({id:Date.now(),date:draft.date,units:used,photos:ids});
+    S.log.push({id:Date.now(),date:draft.date,units:used,photos:ids,notes:(draft.notes||'').trim()});
     used.forEach(c=>{if(!S.status[c])S.status[c]=1});
     save();draft=null;view='log';render();scrollTo(0,0);
   }
@@ -273,6 +279,7 @@ document.addEventListener('click',async e=>{
     else{armed=id;keep(logv)}
   }
 });
+document.addEventListener('input',e=>{if(e.target.id==='nt'&&draft)draft.notes=e.target.value});
 document.addEventListener('change',async e=>{
   if(e.target.id==='restore'&&e.target.files[0]){
     try{const n=await mergeBackup(await e.target.files[0].text());view='units';render();$('bkmsg').textContent=`Restored. ${n} service${n===1?'':'s'} added.`}
