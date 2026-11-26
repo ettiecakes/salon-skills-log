@@ -62,6 +62,12 @@ input[type=date]{width:100%}
 .del{background:none;border:0;color:var(--mute);font-size:13px;margin-top:6px;padding:4px 0}
 .del.arm{color:#c0392b;font-weight:700}
 .banner{display:block;width:100%;text-align:left;background:#e4f1ff;border:1px solid #b7d6f5;color:#1d4e7a;border-radius:12px;padding:10px 12px;font-weight:600;margin:0 0 10px}
+.bk{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:18px}
+.bk h3{margin:0 0 4px;font-size:16px}
+.bk .note{margin:4px 0 10px}
+.bk .btns{display:flex;gap:8px;flex-wrap:wrap}
+.bk .btns>*{flex:1;min-width:130px;text-align:center}
+.warn{color:#a0522d;font-weight:600}
 .empty{text-align:center;color:var(--mute);padding:28px 0}
 
 </style>
@@ -86,12 +92,12 @@ const ELECT=[
  ['SHBXCCS004','Recommend products and services'],['SHBHCCS001','Plan hair services for special events'],['SIRRINV001','Receive and handle retail stock'],['SIRRMER001','Produce visual merchandise displays']
 ];
 const STATUS=['Not started','Practising','Evidence done','Signed off'];
-let S={setup:false,picked:{},custom:[],status:{},log:[],signedAt:{}};
+let S={setup:false,picked:{},custom:[],status:{},log:[],signedAt:{},lastBackup:''};
 try{const r=JSON.parse(localStorage.getItem('apr_v1')||'null');if(r)S=Object.assign(S,r)}catch(e){}
 const save=()=>{try{localStorage.setItem('apr_v1',JSON.stringify(S))}catch(e){}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let view=S.setup?'units':'picker',draft=null,armed=null;
+let view=S.setup?'units':'picker',draft=null,armed=null,bk=null;
 
 /* ---- photo storage (IndexedDB) ---- */
 let dbp=null;
@@ -119,6 +125,29 @@ const waiting=()=>mine().filter(([c])=>(S.status[c]||0)===2);
 const tabs=a=>`<div class="tabs"><button class="tab ${a==='units'?'on':''}" data-v="units">Units</button><button class="tab ${a==='sign'?'on':''}" data-v="sign">Sign-off${waiting().length?` <span class="cnt" style="color:inherit">(${waiting().length})</span>`:''}</button><button class="tab ${a==='log'?'on':''}" data-v="log">Log <span class="cnt" style="color:inherit">${S.log.length}</span></button></div>`;
 const setBar=h=>{$('bar').classList.remove('hide');$('barin').innerHTML=h};
 
+/* ---- backup / restore ---- */
+const toData=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)});
+async function makeBackup(){
+  const photos={};let n=0;
+  for(const e of S.log)for(const id of e.photos){try{const b=await getPhoto(id);if(b){photos[id]=await toData(b);n++}}catch(err){}}
+  const json=JSON.stringify({app:'salon-skills-log',v:1,exported:new Date().toISOString(),state:S,photos});
+  const file=new File([json],`salon-skills-log-backup-${today()}.json`,{type:'application/json'});
+  bk={file,photos:n,mb:(file.size/1048576).toFixed(1)};
+}
+function markBackedUp(){S.lastBackup=today();save();bk=null}
+async function mergeBackup(text){
+  const o=JSON.parse(text);
+  if(!o||o.app!=='salon-skills-log'||!o.state)throw new Error('not a Skills Log backup');
+  const t=o.state;let addedLog=0;
+  Object.keys(t.picked||{}).forEach(c=>{if(t.picked[c])S.picked[c]=true});
+  (t.custom||[]).forEach(u=>{if(!S.custom.some(x=>x[0]===u[0])&&!CORE.flatMap(g=>g.u).some(x=>x[0]===u[0])&&!ELECT.some(x=>x[0]===u[0]))S.custom.push(u)});
+  Object.keys(t.status||{}).forEach(c=>{S.status[c]=Math.max(S.status[c]||0,t.status[c]||0)});
+  Object.keys(t.signedAt||{}).forEach(c=>{if(!S.signedAt[c])S.signedAt[c]=t.signedAt[c]});
+  for(const e of t.log||[]){if(!S.log.some(x=>x.id===e.id)){S.log.push(e);addedLog++}}
+  for(const id of Object.keys(o.photos||{})){try{const r=await fetch(o.photos[id]);await putPhoto(id,await r.blob())}catch(err){}}
+  S.setup=true;save();return addedLog;
+}
+
 /* ---- screens ---- */
 function unitBtn([c,t]){return `<button class="unit ${S.picked[c]?'on':''}" data-u="${esc(c)}"><span class="box">${S.picked[c]?'✓':''}</span><span><span class="code">${esc(c)}</span><span class="ttl">${esc(t)}</span></span></button>`}
 function picker(){
@@ -145,7 +174,20 @@ function units(){
   <p class="sub">${signed} of ${m.length} signed off. Tap a status to move it on.</p>
   ${waiting().length?`<button class="banner" data-v="sign">${waiting().length} unit${waiting().length>1?'s are':' is'} ready for your trainer to sign. Tap to see.</button>`:''}
   ${m.map(([c,t])=>{const s=S.status[c]||0,n=S.log.filter(e=>e.units.includes(c)).length;return `<div class="row"><div class="t"><span class="code">${esc(c)}${n?` · ${n} logged`:''}</span><span class="ttl">${esc(t)}</span></div><button class="st s${s}" data-s="${esc(c)}">${STATUS[s]}</button></div>`}).join('')}`;
+  $('app').innerHTML+=backupCard();
   setBar('<button class="ghost" id="change">Change units</button><button class="go" id="newlog">+ Log a service</button>');
+}
+function backupCard(){
+  const lb=S.lastBackup,days=lb?Math.floor((Date.now()-new Date(lb+'T00:00:00').getTime())/864e5):null;
+  const stale=S.log.length&&(lb===''||days>14);
+  const status=lb?`Last backed up ${fmt(lb)}.`:'Not backed up yet.';
+  return `<div class="bk"><h3>Back up your book</h3>
+  <p class="note ${stale?'warn':''}">${status} Your units, log and photos live only on this phone. Save a copy so you don't lose them if you change phone or clear Safari.</p>
+  <div class="btns">
+   ${bk?`<button class="go" id="sharebk">Save / share backup</button>`:`<button class="go" id="prepbk">Make a backup</button>`}
+   <label class="ghost" style="cursor:pointer">Restore from backup<input type="file" id="restore" accept=".json,application/json" hidden></label>
+  </div>
+  <p class="note" id="bkmsg">${bk?`Backup ready (${bk.photos} photo${bk.photos===1?'':'s'}, ${bk.mb} MB). Tap “Save / share backup”, then choose Save to Files or send it to yourself.`:''}</p></div>`;
 }
 function signv(){
   const w=waiting(),done=mine().filter(([c])=>(S.status[c]||0)===3);
@@ -202,6 +244,15 @@ document.addEventListener('click',async e=>{
   else if(t.dataset.s){const c=t.dataset.s;S.status[c]=((S.status[c]||0)+1)%4;if(S.status[c]===3)S.signedAt[c]=today();else delete S.signedAt[c];save();units()}
   else if(t.dataset.sign){const c=t.dataset.sign;S.status[c]=3;S.signedAt[c]=today();save();keep(signv)}
   else if(t.dataset.unsign){const c=t.dataset.unsign;S.status[c]=2;delete S.signedAt[c];save();keep(signv)}
+  else if(t.id==='prepbk'){t.disabled=true;t.textContent='Preparing…';try{await makeBackup()}catch(err){bk=null}units()}
+  else if(t.id==='sharebk'&&bk){
+    const f=bk.file;
+    if(navigator.canShare&&navigator.canShare({files:[f]})){
+      navigator.share({files:[f],title:'Skills Log backup'}).then(()=>{markBackedUp();units()}).catch(()=>{});
+    }else{
+      const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove();markBackedUp();units();
+    }
+  }
   else if(t.dataset.v){view=t.dataset.v;render();scrollTo(0,0)}
   else if(t.id==='newlog'){draft={date:today(),units:{},photos:[]};view='newlog';render();scrollTo(0,0)}
   else if(t.dataset.lu){draft.units[t.dataset.lu]=!draft.units[t.dataset.lu];keep(newlog)}
@@ -223,6 +274,11 @@ document.addEventListener('click',async e=>{
   }
 });
 document.addEventListener('change',async e=>{
+  if(e.target.id==='restore'&&e.target.files[0]){
+    try{const n=await mergeBackup(await e.target.files[0].text());view='units';render();$('bkmsg').textContent=`Restored. ${n} service${n===1?'':'s'} added.`}
+    catch(err){$('bkmsg').textContent='That file isn’t a Skills Log backup.'}
+    return;
+  }
   if(e.target.id==='dt'&&draft){draft.date=e.target.value||draft.date}
   if(e.target.id==='ph'&&draft){
     const files=[...e.target.files];
