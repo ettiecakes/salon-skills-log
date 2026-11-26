@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Salon Skills Log</title>
+<meta name="theme-color" content="#8a4fa0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Skills Log">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#fbf7fa;--card:#fff;--ink:#2b2630;--mute:#7b7283;--line:#eadfee;--accent:#8a4fa0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom))}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:22px 0 8px;display:flex;justify-content:space-between;align-items:center}
+.sub{color:var(--mute);margin:0 0 6px;font-size:14px}
+.qual{display:inline-block;background:#f0e4f4;color:#5d3470;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;margin:6px 0 10px}
+button{font:inherit;cursor:pointer}
+.mini{background:none;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--accent);text-transform:none;letter-spacing:0}
+.unit{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px;width:100%;text-align:left}
+.unit.on{border-color:var(--accent);background:#fbf3fd}
+.box{width:24px;height:24px;border-radius:7px;border:2px solid var(--line);flex:none;display:grid;place-items:center;color:#fff;font-size:15px;margin-top:1px;background:#fff}
+.on .box{background:var(--accent);border-color:var(--accent)}
+.code{font-size:12px;color:var(--mute);font-weight:600}
+.ttl{display:block}
+.add{display:grid;grid-template-columns:110px 1fr;gap:8px;margin-top:8px}
+input{font:inherit;padding:10px;border:2px solid var(--line);border-radius:12px;background:#fff;min-width:0}
+input:focus{outline:none;border-color:var(--accent)}
+.addbtn{grid-column:1/-1;background:#fff;border:1px dashed var(--accent);color:var(--accent);border-radius:12px;padding:10px;font-weight:600}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(251,247,250,.95);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.bar>div{max-width:640px;margin:0 auto;display:flex;gap:8px}
+.go{flex:1;background:var(--accent);color:#fff;border:0;border-radius:14px;padding:14px;font-weight:700}
+.go:disabled{opacity:.4}
+.ghost{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;color:var(--ink)}
+.row{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}
+.row .t{flex:1}
+.st{border:0;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;color:#2b2630;white-space:nowrap}
+.s0{background:#e9e4ec}.s1{background:#ffe1a8}.s2{background:#cfe3ff}.s3{background:#c6ecce}
+.prog{height:10px;background:#eadfee;border-radius:99px;overflow:hidden;margin:10px 0 4px}
+.prog i{display:block;height:100%;background:#4fae6a;width:0}
+.note{font-size:13px;color:var(--mute);margin:6px 0 10px}
+.hide{display:none}
+.tabs{display:flex;gap:6px;margin:10px 0 12px}
+.tab{flex:1;border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px;font-weight:600;color:var(--mute)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.cnt{font-size:12px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.card .d{font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{background:#f0e4f4;color:#5d3470;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:600}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.thumbs div{position:relative}
+.thumbs img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;background:#eee}
+.x{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:13px;line-height:22px;padding:0}
+.photo{display:inline-block;border:2px dashed var(--accent);color:var(--accent);border-radius:12px;padding:12px 16px;font-weight:700;margin-top:6px}
+input[type=date]{width:100%}
+.del{background:none;border:0;color:var(--mute);font-size:13px;margin-top:6px;padding:4px 0}
+.del.arm{color:#c0392b;font-weight:700}
+.banner{display:block;width:100%;text-align:left;background:#e4f1ff;border:1px solid #b7d6f5;color:#1d4e7a;border-radius:12px;padding:10px 12px;font-weight:600;margin:0 0 10px}
+.empty{text-align:center;color:var(--mute);padding:28px 0}
+
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div class="bar hide" id="bar"><div id="barin"></div></div>
+
+<script>
+const QUAL='SHB30416 Certificate III in Hairdressing';
+const CORE=[
+ {g:'Cutting',u:[['SHBHCUT001','Design haircut structures'],['SHBHCUT002','Create one length or solid haircut structures'],['SHBHCUT003','Create graduated haircut structures'],['SHBHCUT004','Create layered haircut structures'],['SHBHCUT005','Cut hair using over-comb techniques']]},
+ {g:'Colour',u:[['SHBHCLS002','Colour and lighten hair'],['SHBHCLS003','Provide full and partial head highlighting treatments'],['SHBHCLS004','Neutralise unwanted colours and tones'],['SHBHCLS005','Provide on scalp full head and retouch bleach treatments']]},
+ {g:'Treatments & basin',u:[['SHBHBAS001','Provide shampoo and basin services'],['SHBHTRI001','Identify and treat hair and scalp conditions'],['SHBHREF002','Straighten and relax hair with chemical treatments']]},
+ {g:'Styling',u:[['SHBHDES003','Create finished hair designs']]},
+ {g:'Clients & salon',u:[['SHBXCCS002','Provide salon services to clients'],['SHBXCCS001','Conduct salon financial transactions'],['SHBHIND003','Develop and expand a client base'],['SHBHIND001','Maintain and organise tools, equipment and work areas'],['SHBXIND001','Comply with organisational requirements within a personal services environment'],['SHBXIND002','Communicate as part of a salon team'],['SHBXWHS001','Apply safe hygiene, health and work practices'],['BSBSUS201','Participate in environmentally sustainable work practices']]}
+];
+const ELECT=[
+ ['SHBHCUT006','Create combined haircut structures'],['SHBHCUT007',"Create combined traditional and classic men's haircut structures"],['SHBHDES004','Create classic long hair up-styles'],
+ ['SHBHCUT011','Design and maintain beards and moustaches'],['SHBHCUT012','Shave heads and faces'],['SHBHBAS002','Provide head, neck and shoulder massages for relaxation'],
+ ['SHBHDES002','Braid hair'],['SHBHREF001','Curl and volumise hair with chemical treatments'],['SHBHREF003','Straighten and relax hair with protein treatments'],
+ ['SHBXCCS004','Recommend products and services'],['SHBHCCS001','Plan hair services for special events'],['SIRRINV001','Receive and handle retail stock'],['SIRRMER001','Produce visual merchandise displays']
+];
+const STATUS=['Not started','Practising','Evidence done','Signed off'];
+let S={setup:false,picked:{},custom:[],status:{},log:[],signedAt:{}};
+try{const r=JSON.parse(localStorage.getItem('apr_v1')||'null');if(r)S=Object.assign(S,r)}catch(e){}
+const save=()=>{try{localStorage.setItem('apr_v1',JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let view=S.setup?'units':'picker',draft=null,armed=null;
+
+/* ---- photo storage (IndexedDB) ---- */
+let dbp=null;
+function idb(){
+  if(dbp)return dbp;
+  dbp=new Promise((res,rej)=>{try{const r=indexedDB.open('apr_photos',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
+  return dbp;
+}
+async function putPhoto(id,blob){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('p','readwrite');t.objectStore('p').put(blob,id);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+async function getPhoto(id){const d=await idb();return new Promise((res,rej)=>{const r=d.transaction('p').objectStore('p').get(id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function delPhoto(id){try{const d=await idb();d.transaction('p','readwrite').objectStore('p').delete(id)}catch(e){}}
+function shrink(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const m=900,k=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(),'image/jpeg',.72)};im.onerror=rej;im.src=u})}
+async function fillThumbs(){
+  for(const img of document.querySelectorAll('img[data-p]')){
+    try{const b=await getPhoto(img.dataset.p);if(b)img.src=URL.createObjectURL(b)}catch(e){}
+  }
+}
+
+/* ---- helpers ---- */
+const ALL=()=>[...CORE.flatMap(g=>g.u),...ELECT,...S.custom];
+const mine=()=>ALL().filter(([c])=>S.picked[c]);
+const today=()=>new Date().toLocaleDateString('en-CA');
+const fmt=d=>{const [y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'})};
+const waiting=()=>mine().filter(([c])=>(S.status[c]||0)===2);
+const tabs=a=>`<div class="tabs"><button class="tab ${a==='units'?'on':''}" data-v="units">Units</button><button class="tab ${a==='sign'?'on':''}" data-v="sign">Sign-off${waiting().length?` <span class="cnt" style="color:inherit">(${waiting().length})</span>`:''}</button><button class="tab ${a==='log'?'on':''}" data-v="log">Log <span class="cnt" style="color:inherit">${S.log.length}</span></button></div>`;
+const setBar=h=>{$('bar').classList.remove('hide');$('barin').innerHTML=h};
+
+/* ---- screens ---- */
+function unitBtn([c,t]){return `<button class="unit ${S.picked[c]?'on':''}" data-u="${esc(c)}"><span class="box">${S.picked[c]?'✓':''}</span><span><span class="code">${esc(c)}</span><span class="ttl">${esc(t)}</span></span></button>`}
+function picker(){
+  const n=Object.keys(S.picked).filter(k=>S.picked[k]).length;
+  $('app').innerHTML=`
+  <h1>Which units are you doing?</h1>
+  <span class="qual">${QUAL}</span>
+  <p class="sub">Tick the units you're working on right now. You can change this any time.</p>
+  ${CORE.map(g=>`<h2>${g.g}<button class="mini" data-g="${g.g}">Tick all</button></h2>${g.u.map(unitBtn).join('')}`).join('')}
+  <h2>Electives <span></span></h2>
+  <p class="note">Your employer or RTO decides your 7 electives. These are common ones, so tick yours, or add your own below.</p>
+  ${ELECT.map(unitBtn).join('')}
+  ${S.custom.map(unitBtn).join('')}
+  <div class="add"><input id="cc" placeholder="Unit code" autocapitalize="characters"><input id="ct" placeholder="Unit title"><button class="addbtn" id="addc">+ Add a unit that isn't listed</button></div>`;
+  setBar((S.setup?'<button class="ghost" id="cancel">Cancel</button>':'')+`<button class="go" id="cont" ${n?'':'disabled'}>${n?`Continue with ${n} unit${n>1?'s':''}`:'Tick at least one unit'}</button>`);
+}
+function units(){
+  const m=mine(),signed=m.filter(([c])=>(S.status[c]||0)===3).length;
+  $('app').innerHTML=`
+  <h1>My competence book</h1>
+  <span class="qual">${QUAL}</span>
+  ${tabs('units')}
+  <div class="prog"><i style="width:${m.length?signed/m.length*100:0}%"></i></div>
+  <p class="sub">${signed} of ${m.length} signed off. Tap a status to move it on.</p>
+  ${waiting().length?`<button class="banner" data-v="sign">${waiting().length} unit${waiting().length>1?'s are':' is'} ready for your trainer to sign. Tap to see.</button>`:''}
+  ${m.map(([c,t])=>{const s=S.status[c]||0,n=S.log.filter(e=>e.units.includes(c)).length;return `<div class="row"><div class="t"><span class="code">${esc(c)}${n?` · ${n} logged`:''}</span><span class="ttl">${esc(t)}</span></div><button class="st s${s}" data-s="${esc(c)}">${STATUS[s]}</button></div>`}).join('')}`;
+  setBar('<button class="ghost" id="change">Change units</button><button class="go" id="newlog">+ Log a service</button>');
+}
+function signv(){
+  const w=waiting(),done=mine().filter(([c])=>(S.status[c]||0)===3);
+  const last=c=>{const d=S.log.filter(e=>e.units.includes(c)).map(e=>e.date).sort().pop();return d?`Last logged ${fmt(d)}`:'No services logged yet'};
+  $('app').innerHTML=`
+  <h1>Sign-off</h1>
+  <span class="qual">${QUAL}</span>
+  ${tabs('sign')}
+  <h2>Ready for your trainer to sign (${w.length})</h2>
+  ${w.length?w.map(([c,t])=>`<div class="row"><div class="t"><span class="code">${esc(c)} · ${S.log.filter(e=>e.units.includes(c)).length} logged</span><span class="ttl">${esc(t)}</span><span class="cnt">${last(c)}</span></div><button class="st s3" data-sign="${esc(c)}">Signed ✓</button></div>`).join(''):'<div class="empty">Nothing waiting.<br>Mark a unit “Evidence done” on the Units tab and it appears here.</div>'}
+  ${done.length?`<h2>Signed off (${done.length})</h2>${done.map(([c,t])=>`<div class="row"><div class="t"><span class="code">${esc(c)}${S.signedAt[c]?' · '+fmt(S.signedAt[c]):''}</span><span class="ttl">${esc(t)}</span></div><button class="mini" data-unsign="${esc(c)}">Undo</button></div>`).join('')}`:''}`;
+  setBar('<button class="ghost" id="change">Change units</button><button class="go" id="newlog">+ Log a service</button>');
+}
+function logv(){
+  const L=[...S.log].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  $('app').innerHTML=`
+  <h1>Service log</h1>
+  <span class="qual">${QUAL}</span>
+  ${tabs('log')}
+  ${L.length?L.map(e=>`<div class="card"><div class="d">${fmt(e.date)}</div>
+    <div class="chips">${e.units.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div>
+    ${e.photos.length?`<div class="thumbs">${e.photos.map(p=>`<div><img data-p="${p}" alt="Finished work"></div>`).join('')}</div>`:''}
+    <button class="del ${armed===e.id?'arm':''}" data-del="${e.id}">${armed===e.id?'Tap again to delete':'Delete entry'}</button></div>`).join(''):'<div class="empty">No services logged yet.<br>Tap “Log a service” after your next client.</div>'}`;
+  setBar('<button class="ghost" id="change">Change units</button><button class="go" id="newlog">+ Log a service</button>');
+  fillThumbs();
+}
+function newlog(){
+  const m=mine();
+  $('app').innerHTML=`
+  <h1>Log a service</h1>
+  <h2>Date</h2>
+  <input type="date" id="dt" value="${draft.date}" max="${today()}">
+  <h2>Which units did this cover?</h2>
+  ${m.map(([c,t])=>`<button class="unit ${draft.units[c]?'on':''}" data-lu="${esc(c)}"><span class="box">${draft.units[c]?'✓':''}</span><span><span class="code">${esc(c)}</span><span class="ttl">${esc(t)}</span></span></button>`).join('')}
+  <h2>Photo of the finished work</h2>
+  <div class="thumbs">${draft.photos.map(p=>`<div><img src="${p.url}" alt=""><button class="x" data-rp="${p.id}" aria-label="Remove photo">×</button></div>`).join('')}</div>
+  <label class="photo">+ Add photo<input type="file" id="ph" accept="image/*" multiple hidden></label>
+  <p class="note" id="phnote"></p>`;
+  const n=Object.keys(draft.units).filter(k=>draft.units[k]).length;
+  setBar(`<button class="ghost" id="cancellog">Cancel</button><button class="go" id="savelog" ${n?'':'disabled'}>${n?'Save entry':'Tick at least one unit'}</button>`);
+}
+function render(){({picker,units,sign:signv,log:logv,newlog}[view])()}
+function keep(fn){const y=scrollY;fn();scrollTo(0,y)}
+
+/* ---- events ---- */
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.u){S.picked[t.dataset.u]=!S.picked[t.dataset.u];save();keep(picker)}
+  else if(t.dataset.g){const g=CORE.find(x=>x.g===t.dataset.g);const all=g.u.every(([c])=>S.picked[c]);g.u.forEach(([c])=>S.picked[c]=!all);save();keep(picker)}
+  else if(t.id==='addc'){const c=$('cc').value.trim().toUpperCase(),ti=$('ct').value.trim();if(!c||!ti)return;if(!ALL().some(u=>u[0]===c))S.custom.push([c,ti]);S.picked[c]=true;save();picker()}
+  else if(t.id==='cont'){S.setup=true;view='units';save();render();scrollTo(0,0)}
+  else if(t.id==='cancel'){view='units';render();scrollTo(0,0)}
+  else if(t.id==='change'){view='picker';render();scrollTo(0,0)}
+  else if(t.dataset.s){const c=t.dataset.s;S.status[c]=((S.status[c]||0)+1)%4;if(S.status[c]===3)S.signedAt[c]=today();else delete S.signedAt[c];save();units()}
+  else if(t.dataset.sign){const c=t.dataset.sign;S.status[c]=3;S.signedAt[c]=today();save();keep(signv)}
+  else if(t.dataset.unsign){const c=t.dataset.unsign;S.status[c]=2;delete S.signedAt[c];save();keep(signv)}
+  else if(t.dataset.v){view=t.dataset.v;render();scrollTo(0,0)}
+  else if(t.id==='newlog'){draft={date:today(),units:{},photos:[]};view='newlog';render();scrollTo(0,0)}
+  else if(t.dataset.lu){draft.units[t.dataset.lu]=!draft.units[t.dataset.lu];keep(newlog)}
+  else if(t.dataset.rp){draft.photos=draft.photos.filter(p=>p.id!==t.dataset.rp);keep(newlog)}
+  else if(t.id==='cancellog'){draft=null;view='log';render();scrollTo(0,0)}
+  else if(t.id==='savelog'){
+    draft.date=($('dt')&&$('dt').value)||draft.date;
+    const ids=[];
+    for(const p of draft.photos){try{await putPhoto(p.id,p.blob);ids.push(p.id)}catch(err){}}
+    const used=Object.keys(draft.units).filter(k=>draft.units[k]);
+    S.log.push({id:Date.now(),date:draft.date,units:used,photos:ids});
+    used.forEach(c=>{if(!S.status[c])S.status[c]=1});
+    save();draft=null;view='log';render();scrollTo(0,0);
+  }
+  else if(t.dataset.del){
+    const id=Number(t.dataset.del);
+    if(armed===id){const e2=S.log.find(x=>x.id===id);if(e2)e2.photos.forEach(delPhoto);S.log=S.log.filter(x=>x.id!==id);armed=null;save();logv()}
+    else{armed=id;keep(logv)}
+  }
+});
+document.addEventListener('change',async e=>{
+  if(e.target.id==='dt'&&draft){draft.date=e.target.value||draft.date}
+  if(e.target.id==='ph'&&draft){
+    const files=[...e.target.files];
+    for(const f of files){try{const b=await shrink(f);draft.photos.push({id:'p'+Date.now()+Math.random().toString(36).slice(2,7),blob:b,url:URL.createObjectURL(b)})}catch(err){}}
+    keep(newlog);
+  }
+});
+render();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
